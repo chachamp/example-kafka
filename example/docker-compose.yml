@@ -1,21 +1,82 @@
 version: '2'
 services:
-  zookeeperofm:
+  zookeeperofm1:
     image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper-ofm-1
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 22181
       ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: 10.17.2.210:22888:23888;10.17.2.210:32888:33888;10.17.2.210:42888:43888
+    networks:
+      - kafka-ofm
 
-  kafkaofm:
+  zookeeperofm2:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper-ofm-2
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 32181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: 10.17.2.210:23888;10.17.2.210:32888:33888;10.17.2.210:42888:43888
+    networks:
+      - kafka-ofm
+
+  zookeeperofm3:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper-ofm-3
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 42181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: 10.17.2.210:22888:23888;10.17.2.210:32888:33888;10.17.2.210:42888:43888
+    networks:
+      - kafka-ofm
+
+  kafkaofm1:
     image: confluentinc/cp-kafka:latest
     depends_on:
-      - zookeeperofm
-    ports:
-      - 9092:9092
+      - zookeeperofm1
+      - zookeeperofm2
+      - zookeeperofm3
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeperofm:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://10.17.2.210:29092,PLAINTEXT_HOST://10.17.2.210:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ZOOKEEPER_CONNECT: 10.17.2.210:22181,10.17.2.210:32181,10.17.2.210:42181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://10.17.2.210:19092
+    networks:
+      - kafka-ofm
+
+  kafkaofm2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeperofm1
+      - zookeeperofm2
+      - zookeeperofm3
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 10.17.2.210:22181,10.17.2.210:32181,10.17.2.210:42181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://10.17.2.210:29092
+    networks:
+      - kafka-ofm
+
+  kafkaofm3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: 10.17.2.210:22181,10.17.2.210:32181,10.17.2.210:42181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://10.17.2.210:39092
+    networks:
+      - kafka-ofm
+networks:
+    kafka-ofm:
+      driver: bridge
